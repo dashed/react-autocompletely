@@ -2,6 +2,7 @@ import React, {Component} from 'react'
 import PropTypes from 'prop-types'
 import mitt from 'mitt'
 
+import Button from './button'
 import Controller from './controller'
 import Input from './input'
 import Item from './item'
@@ -11,11 +12,12 @@ import {AUTOCOMPLETE_CONTEXT} from './constants'
 import {cbToCb, compose} from './utils'
 
 class Autocomplete extends Component {
+  static Button = Button
+  static Controller = Controller
   static Input = Input
+  static Item = Item
   static Menu = Menu
   static MenuStatus = MenuStatus
-  static Item = Item
-  static Controller = Controller
   static childContextTypes = {
     [AUTOCOMPLETE_CONTEXT]: PropTypes.object.isRequired,
   }
