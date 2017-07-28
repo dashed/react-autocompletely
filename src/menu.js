@@ -1,10 +1,11 @@
-import React, {Component} from 'react'
+import React, {Component, Children} from 'react'
+import ReactDOM from 'react-dom'
 import PropTypes from 'prop-types'
 import mitt from 'mitt'
 
 import MenuStatus from './menu-status'
 import {AUTOCOMPLETE_CONTEXT, MENU_CONTEXT} from './constants'
-import {cbToCb, compose, scrollIntoView} from './utils'
+import {cbToCb, scrollIntoView} from './utils'
 
 class Menu extends Component {
   static contextTypes = {
@@ -16,9 +17,8 @@ class Menu extends Component {
   }
 
   static propTypes = {
-    ref: PropTypes.func,
     defaultHighlightedIndex: PropTypes.number,
-    children: PropTypes.func.isRequired,
+    render: PropTypes.func.isRequired,
   }
 
   static defaultProps = {
@@ -32,7 +32,6 @@ class Menu extends Component {
   constructor(props, context) {
     super(props, context)
     this.autocomplete = this.context[AUTOCOMPLETE_CONTEXT]
-    this.ref = compose(node => (this.node = node), this.props.ref)
   }
 
   state = Menu.initialState
@@ -56,9 +55,14 @@ class Menu extends Component {
     } else if (newIndex > itemsLastIndex) {
       newIndex = 0
     }
-    this.setState({
-      highlightedIndex: newIndex,
-    })
+    this.setState(
+      {
+        highlightedIndex: newIndex,
+      },
+      () => {
+        this.renderStatus()
+      },
+    )
     this.emitter.emit('changeHighlighedIndex', newIndex)
   }
 
@@ -107,6 +111,11 @@ class Menu extends Component {
   componentDidMount() {
     this.autocomplete.setMenu(this)
     this.autocomplete.emitter.on('menu:open', this.setDefaultHighlightedIndex)
+
+    // attach node to end of document and render MenuStatus into it
+    this._statusNode = document.createElement('div')
+    document.body.appendChild(this._statusNode)
+    this.renderStatus()
   }
 
   componentDidUpdate() {
@@ -116,27 +125,27 @@ class Menu extends Component {
   componentWillUnmount() {
     this.autocomplete.removeMenu(this)
     this.autocomplete.emitter.off('menu:open', this.setDefaultHighlightedIndex)
+
+    // cleanup MenuStatus component
+    ReactDOM.unmountComponentAtNode(this._statusNode)
+    document.body.removeChild(this._statusNode)
+  }
+
+  renderStatus() {
+    const {inputValue} = this.autocomplete.state
+    const {highlightedIndex} = this.state
+    ReactDOM.unstable_renderSubtreeIntoContainer(
+      this,
+      <MenuStatus
+        highlightedIndex={highlightedIndex}
+        inputValue={inputValue}
+      />,
+      this._statusNode,
+    )
   }
 
   render() {
-    if (!this.autocomplete.state.isOpen) {
-      return null
-    }
-    const {inputValue} = this.autocomplete.state
-    const {highlightedIndex} = this.state
-    // eslint-disable-next-line no-unused-vars
-    const {defaultHighlightedIndex, children, ...rest} = this.props
-    return (
-      <div {...rest} ref={this.ref}>
-        <div>
-          {children(this.autocomplete.getControllerStateAndHelpers())}
-        </div>
-        <MenuStatus
-          highlightedIndex={highlightedIndex}
-          inputValue={inputValue}
-        />
-      </div>
-    )
+    return this.props.render(this.autocomplete.getControllerStateAndHelpers())
   }
 }
 

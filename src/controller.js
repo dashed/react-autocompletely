@@ -8,7 +8,7 @@ class Controller extends Component {
     [AUTOCOMPLETE_CONTEXT]: PropTypes.object.isRequired,
   }
   static propTypes = {
-    children: PropTypes.func.isRequired,
+    render: PropTypes.func.isRequired,
   }
 
   constructor(props, context) {
@@ -17,9 +17,7 @@ class Controller extends Component {
   }
 
   render() {
-    return this.props.children(
-      this.autocomplete.getControllerStateAndHelpers(),
-    )
+    return this.props.render(this.autocomplete.getControllerStateAndHelpers())
   }
 }
 
